@@ -30,8 +30,10 @@ def load_watches():
     try:
         with WATCHES_FILE.open("r", encoding="utf-8") as file:
             watches = json.load(file)
+
     except json.JSONDecodeError as error:
         raise WatchError("watches.json is not valid JSON.") from error
+
     except OSError as error:
         raise WatchError(f"Could not read watches.json: {error}") from error
 
@@ -47,6 +49,7 @@ def save_watches(watches):
         with WATCHES_FILE.open("w", encoding="utf-8") as file:
             json.dump(watches, file, indent=2, ensure_ascii=False)
             file.write("\n")
+
     except OSError as error:
         raise WatchError(f"Could not write watches.json: {error}") from error
 
@@ -77,16 +80,23 @@ def api_get(path, api_key):
     try:
         with urlopen(request, timeout=REQUEST_TIMEOUT) as response:
             return json.load(response)
+
     except HTTPError as error:
         if error.code in (401, 403):
             raise WatchError("The UW API key was rejected.") from error
-
         if error.code == 404:
             raise WatchError("The requested UW API resource was not found.") from error
-
         raise WatchError(f"UW API returned HTTP {error.code}.") from error
+    
+    except TimeoutError as error:
+        raise WatchError(
+                f"UW API did not respond within {REQUEST_TIMEOUT} seconds. "
+                "Please try again later."
+        ) from error
+    
     except URLError as error:
         raise WatchError(f"Could not connect to the UW API: {error.reason}") from error
+    
     except json.JSONDecodeError as error:
         raise WatchError("UW API returned invalid JSON.") from error
 
@@ -206,6 +216,7 @@ def check_watches(args):
                 subject,
                 catalog_number,
             )
+
         except WatchError as error:
             print(f"ERROR: {error}", file=sys.stderr)
             had_error = True
@@ -223,6 +234,7 @@ def check_watches(args):
                 section_number = int(section["classSection"])
                 enrolled = int(section["enrolledStudents"])
                 capacity = int(section["maxEnrollmentCapacity"])
+
             except (KeyError, TypeError, ValueError) as error:
                 raise WatchError(
                     f"UW API returned incomplete data for "
@@ -299,9 +311,11 @@ def main():
     try:
         failed = args.handler(args)
         return 1 if failed else 0
+    
     except WatchError as error:
         print(f"ERROR: {error}", file=sys.stderr)
         return 1
+    
     except KeyboardInterrupt:
         print("\nCancelled.", file=sys.stderr)
         return 130
