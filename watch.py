@@ -227,6 +227,7 @@ def check_watches(args):
         for section in sections:
             component = str(section.get("courseComponent", "")).upper()
 
+            # Only show sections that match the requested components. If the user did not specify any components, show all sections.
             if None not in wanted_components and component not in wanted_components:
                 continue
 
