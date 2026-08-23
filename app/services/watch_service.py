@@ -258,18 +258,35 @@ def check_watch_status(
     matched_sections = []
 
     for raw_section in sections:
+        raw_component = raw_section.get(
+            "courseComponent"
+        )
+
+        if not isinstance(raw_component, str):
+            continue
+
+        normalized_component = (
+            raw_component.strip().upper()
+        )
+
+        if (
+            not normalized_component
+            or not normalized_component.isalpha()
+        ):
+            continue
+
+        if (
+            watch.component is not None
+            and normalized_component
+            != watch.component
+        ):
+            continue
+
         section = _convert_section(
             raw_section,
             watch.subject,
             watch.catalog,
         )
-
-        if (
-            watch.component is not None
-            and section["component"]
-            != watch.component
-        ):
-            continue
 
         matched_sections.append(section)
 
