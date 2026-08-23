@@ -185,6 +185,59 @@ def test_delete_watch_returns_204(client):
     assert get_response.status_code == 404
 
 
+def test_status_skips_null_component_before_valid_lec(
+    client,
+    db_session,
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        watch_service.uw_client,
+        "get_course_sections",
+        lambda term_code, subject, catalog: [
+            {
+                "courseComponent": None,
+                "classSection": 99,
+                "enrolledStudents": 10,
+                "maxEnrollmentCapacity": 20,
+            },
+            {
+                "courseComponent": "LEC",
+                "classSection": 1,
+                "enrolledStudents": 100,
+                "maxEnrollmentCapacity": 120,
+            },
+        ],
+    )
+
+    created = create_watch(
+        client,
+        component="LEC",
+    )
+
+    response = client.get(
+        f"/watches/{created['id']}/status"
+    )
+
+    assert response.status_code == 200
+
+    assert response.json()["sections"] == [
+        {
+            "section": "LEC 001",
+            "component": "LEC",
+            "enrolled_total": 100,
+            "capacity": 120,
+            "status": "OPEN",
+        }
+    ]
+
+    snapshots = db_session.scalars(
+        select(Snapshot)
+    ).all()
+
+    assert len(snapshots) == 1
+    assert snapshots[0].section == "LEC 001"
+
+
 def test_status_filters_component_and_saves_snapshot(
     client,
     db_session,
@@ -419,8 +472,8 @@ def test_status_rejects_malformed_section_data(
         "get_course_sections",
         lambda term_code, subject, catalog: [
             {
-                "courseComponent": None,
-                "classSection": 1,
+                "courseComponent": "LEC",
+                "classSection": None,
                 "enrolledStudents": 20,
                 "maxEnrollmentCapacity": 30,
             }
@@ -429,7 +482,7 @@ def test_status_rejects_malformed_section_data(
 
     created = create_watch(
         client,
-        component=None,
+        component="LEC",
     )
 
     response = client.get(
