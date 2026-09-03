@@ -6,7 +6,10 @@ from typing import Literal
 from pydantic import (
     BaseModel,
     ConfigDict,
+    Field,
+    StrictInt,
     field_validator,
+    model_validator,
 )
 
 
@@ -119,3 +122,42 @@ class WatchStatusRead(BaseModel):
     term_code: str
     checked_at: datetime
     sections: list[SectionStatus]
+
+
+class ParseRequest(BaseModel):
+    text: str
+
+    @field_validator("text")
+    @classmethod
+    def validate_text(cls, value: str) -> str:
+        normalized = value.strip()
+
+        if not 1 <= len(normalized) <= 500:
+            raise ValueError(
+                "Text must contain between 1 and 500 characters."
+            )
+
+        return normalized
+
+
+class ModelCourseFields(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    subject: str | None
+    catalog: str | None
+    component: str | None
+    term_season: Literal["WINTER", "SPRING", "FALL"] | None
+    term_year: StrictInt | None = Field(ge=2000, le=2099)
+
+    @model_validator(mode="after")
+    def validate_term_pair(self):
+        if (self.term_season is None) != (self.term_year is None):
+            raise ValueError(
+                "Term season and year must be provided together."
+            )
+
+        return self
+
+
+class ParsePreview(WatchCreate):
+    pass

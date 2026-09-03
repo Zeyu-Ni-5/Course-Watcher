@@ -23,3 +23,23 @@ class NoMatchingSectionsError(CourseWatcherError):
 
 class UWAPIError(CourseWatcherError):
     """Raised when the UW API cannot provide valid data."""
+
+
+class ParseInputError(CourseWatcherError):
+    """Raised when text cannot safely identify one course."""
+
+
+class ModelServiceError(CourseWatcherError):
+    """Raised when OpenAI cannot complete a parse request."""
+
+
+class ModelResponseInvalidError(CourseWatcherError):
+    """Raised for one absent, refused, or invalid model response."""
+
+
+class ModelOutputError(CourseWatcherError):
+    """Raised after both model responses are invalid."""
+
+
+class ConfigurationError(CourseWatcherError):
+    """Raised when parse configuration is missing."""
