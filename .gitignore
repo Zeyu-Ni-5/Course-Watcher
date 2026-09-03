@@ -1,21 +1,14 @@
-# Python virtual environment
 .venv/
 venv/
-
-# Python cache files
 __pycache__/
 *.py[cod]
-
-# Environment variables and secrets
+.pytest_cache/
+pytest-cache-files-*/
+.coverage
+htmlcov/
 .env
 .env.*
-
-# Editor settings
-.vscode/
-
-# Operating system files
-.DS_Store
-Thumbs.db
-
-# Local SQLite database
-course_watcher.db
+!.env.example
+*.db
+*.sqlite
+*.sqlite3
