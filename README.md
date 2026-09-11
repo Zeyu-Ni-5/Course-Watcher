@@ -6,6 +6,68 @@ Course Watcher v2 adds a protected English natural-language parsing preview and 
 
 `POST /parse` never creates a Watch. Review its four-field response, then send the accepted values to `POST /watches`.
 
+## Live Deployment
+
+Course Watcher v2 is deployed publicly on Railway:
+
+- **API base URL:** <https://course-watcher-production-7e96.up.railway.app>
+- **Health check:** <https://course-watcher-production-7e96.up.railway.app/health>
+- **Interactive API documentation:** <https://course-watcher-production-7e96.up.railway.app/docs>
+- **OpenAPI schema:** <https://course-watcher-production-7e96.up.railway.app/openapi.json>
+
+The base URL returns `{"detail":"Not Found"}` because this project is an API service and does not define a webpage at `/`. Use `/docs` to explore and test the available endpoints.
+
+The hosted deployment uses a shared, ephemeral SQLite database. Test data may be visible to other users and may disappear after a restart or redeployment. Do not submit personal or sensitive information.
+
+### Using the Hosted API
+
+The easiest way to use the hosted API is through Swagger UI:
+
+1. Open the [interactive API documentation](https://course-watcher-production-7e96.up.railway.app/docs).
+2. Select an endpoint and click **Try it out**.
+3. Enter the required parameters or JSON request body.
+4. Click **Execute** to send the request.
+
+Public endpoints such as `GET /health` and the Watch endpoints can be tested directly.
+
+`POST /parse` is protected by an `X-Token` header. The deployment's private `APP_ACCESS_TOKEN` is not published. To use the natural-language parsing endpoint, run your own local instance or deploy your own copy with your own `APP_ACCESS_TOKEN` and `OPENAI_API_KEY`.
+
+### Hosted API Examples
+
+Check whether the service is online:
+
+```bash
+curl https://course-watcher-production-7e96.up.railway.app/health
+```
+
+List existing watches:
+
+```bash
+curl https://course-watcher-production-7e96.up.railway.app/watches
+```
+
+Create a watch:
+
+```bash
+curl -X POST \
+  https://course-watcher-production-7e96.up.railway.app/watches \
+  -H "Content-Type: application/json" \
+  -d '{
+    "subject": "CS",
+    "catalog": "136",
+    "component": "LEC",
+    "term_code": "1269"
+  }'
+```
+
+The returned object contains a numeric `id`. Use that value to check live enrollment:
+
+```bash
+curl https://course-watcher-production-7e96.up.railway.app/watches/1/status
+```
+
+Replace `1` with the actual Watch ID returned by the API.
+
 ## Features
 
 - Create, list, retrieve, update, and delete course watches
@@ -73,7 +135,7 @@ The OpenAI API is billed separately from ChatGPT. Do not put any secret in sourc
 Development server:
 
 ```powershell
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
 
 Production/Railway command (Railway supplies `$PORT`):
@@ -137,12 +199,22 @@ The `watches` table stores course and monitoring configuration. The `snapshots` 
 3. In the service **Settings**, set the start command to:
 
    ```text
-   uvicorn app.main:app --host 0.0.0.0 --port $PORT
-   ```
+  python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT   
+  ```
 
-4. In the service **Settings**, set the healthcheck path to `/health` and the healthcheck timeout to **100 seconds**.
-5. In the service **Variables** tab, add `UW_API_KEY`, `APP_ACCESS_TOKEN`, and `OPENAI_API_KEY`. Add `MODEL_NAME` or `DATABASE_URL` only when overriding their defaults. Use private values; never paste secrets into this README.
-6. In the service **Settings**, open **Networking** and select **Generate Domain**. Verify `https://<generated-domain>/health` returns `{"status":"ok"}`.
+4. In the service Variables tab, configure:
+  ```text
+  PORT=8080
+  UW_API_KEY=<your UW Open Data API key>
+  APP_ACCESS_TOKEN=<your private random token>
+  OPENAI_API_KEY=<your OpenAI API key>
+  ```
+  MODEL_NAME is optional and defaults to gpt-5.6-luna.
+5. Set the healthcheck path to /health.
+6. Under Networking, generate a Railway service domain with target port 8080.
+7. Verify that https://<generated-domain>/health returns {"status":"ok"}.
+
+Never commit API keys or access tokens to GitHub. Store all deployment secrets in Railway's Variables tab.
 
 New Railway services cannot opt into legacy Config as Code, so this repository intentionally has no `railway.json`. Railway's current Infrastructure as Code flow requires a linked project and a successful `railway config plan`; use it only as a separately authorized deployment step. See Railway's [Config as Code](https://docs.railway.com/config-as-code) and [Infrastructure as Code](https://docs.railway.com/infrastructure-as-code) documentation.
 
