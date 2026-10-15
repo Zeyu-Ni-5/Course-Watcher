@@ -11,7 +11,7 @@ Waterloo course watch dashboard built with **React + TypeScript + Vite**, connec
 | API health | https://course-watcher-v3-api-production.up.railway.app/health |
 | API documentation | https://course-watcher-v3-api-production.up.railway.app/docs |
 
-These are separate Railway services in the existing Course Watcher project. The original v2 service is preserved. Deployment verification is recorded in `docs/verification.md`; generated domain names alone do not prove a working deployment.
+These are separate Railway services in the existing Course Watcher project. The original v2 service is preserved.
 
 ## What v3 adds
 
