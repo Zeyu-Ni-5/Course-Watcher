@@ -1,9 +1,6 @@
 # app/main.py
 
-import os
-
 from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exception_handlers import (
     request_validation_exception_handler,
 )
@@ -33,25 +30,11 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Course Watcher",
-    version="3.0.0",
+    version="2.0.0",
     description=(
         "Monitor University of Waterloo "
         "course enrollment."
     ),
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        origin.strip().rstrip('/')
-        for origin in os.getenv(
-            'CORS_ORIGINS',
-            'http://localhost:5173,http://127.0.0.1:5173',
-        ).split(',')
-        if origin.strip()
-    ],
-    allow_methods=['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-    allow_headers=['Content-Type'],
 )
 
 

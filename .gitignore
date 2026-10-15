@@ -12,10 +12,3 @@ htmlcov/
 *.db
 *.sqlite
 *.sqlite3
-node_modules/
-dist/
-*.tsbuildinfo
-.superpowers/
-.openai/site-state/
-artifacts/
-*.log
