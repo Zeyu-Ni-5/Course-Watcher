@@ -36,7 +36,6 @@ frontend/src/           React TypeScript dashboard and interaction tests
 frontend/Dockerfile     Build with Node; serve static production files with Caddy
 Dockerfile              FastAPI production container
 scripts/verify_api.py   Real HTTP CRUD and optional enrollment verification
-docs/                   Approved design, plan, progress and verification record
 ```
 
 ## Local development on Windows
