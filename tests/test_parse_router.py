@@ -160,7 +160,7 @@ def test_openapi_documents_parse_security(client):
     document = client.get("/openapi.json").json()
     operation = document["paths"]["/parse"]["post"]
 
-    assert document["info"]["version"] == "2.0.0"
+    assert document["info"]["version"] == "3.0.0"
     assert operation["security"]
     assert "APIKeyHeader" in document["components"]["securitySchemes"]
 
