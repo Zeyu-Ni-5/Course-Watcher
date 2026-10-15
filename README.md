@@ -1,245 +1,119 @@
-# Course Watcher v2
+# Course Watcher v3
 
-Course Watcher is a FastAPI service that monitors University of Waterloo course enrollment using the official UW Open Data API.
+Waterloo course watch dashboard built with **React + TypeScript + Vite**, connected to the real **FastAPI** backend reused from v2.
 
-Course Watcher v2 adds a protected English natural-language parsing preview and a public Railway deployment while preserving all v1 Watch endpoints.
+## Public deployments
 
-`POST /parse` never creates a Watch. Review its four-field response, then send the accepted values to `POST /watches`.
+| Service | Address |
+| --- | --- |
+| Frontend | https://course-watcher-v3-web-production.up.railway.app |
+| FastAPI | https://course-watcher-v3-api-production.up.railway.app |
+| API health | https://course-watcher-v3-api-production.up.railway.app/health |
+| API documentation | https://course-watcher-v3-api-production.up.railway.app/docs |
 
-## Live Deployment
+These are separate Railway services in the existing Course Watcher project. The original v2 service is preserved. Deployment verification is recorded in `docs/verification.md`; generated domain names alone do not prove a working deployment.
 
-Course Watcher v2 is deployed publicly on Railway:
+## What v3 adds
 
-- **API base URL:** <https://course-watcher-production-7e96.up.railway.app>
-- **Health check:** <https://course-watcher-production-7e96.up.railway.app/health>
-- **Interactive API documentation:** <https://course-watcher-production-7e96.up.railway.app/docs>
-- **OpenAPI schema:** <https://course-watcher-production-7e96.up.railway.app/openapi.json>
+- Create and view watches, filter by All / Active / Paused, and pause, resume or delete them.
+- Check actual section availability on demand, including enrollment, capacity, OPEN/FULL and check time.
+- Loading skeletons, empty states, confirmed success messages, readable errors and retry controls.
+- Confirmation before deleting a watch and its snapshots.
+- Responsive laptop and mobile layouts, labeled controls, keyboard focus and accessible feedback.
+- Typed API client, request timeouts, safe 204 handling and cancellation of obsolete enrollment requests.
+- Explicit CORS allowlist and separate frontend/backend deployment containers.
 
-The base URL returns `{"detail":"Not Found"}` because this project is an API service and does not define a webpage at `/`. Use `/docs` to explore and test the available endpoints.
+The backend models, UW client, service logic, watch routes and protected parse endpoint are reused from v2. The v2 folder remains unchanged.
 
-The hosted deployment uses a shared, ephemeral SQLite database. Test data may be visible to other users and may disappear after a restart or redeployment. Do not submit personal or sensitive information.
+**Scope:** checks run only when requested. This version does not include a background scheduler, notifications, registration or individual user accounts. Pause updates the watch's active flag and disables the frontend check action. The public demo is shared: everyone can view and modify its watches. Do not enter personal information.
 
-### Using the Hosted API
+## Folder layout
 
-The easiest way to use the hosted API is through Swagger UI:
-
-1. Open the [interactive API documentation](https://course-watcher-production-7e96.up.railway.app/docs).
-2. Select an endpoint and click **Try it out**.
-3. Enter the required parameters or JSON request body.
-4. Click **Execute** to send the request.
-
-Public endpoints such as `GET /health` and the Watch endpoints can be tested directly.
-
-`POST /parse` is protected by an `X-Token` header. The deployment's private `APP_ACCESS_TOKEN` is not published. To use the natural-language parsing endpoint, run your own local instance or deploy your own copy with your own `APP_ACCESS_TOKEN` and `OPENAI_API_KEY`.
-
-### Hosted API Examples
-
-Check whether the service is online:
-
-```bash
-curl https://course-watcher-production-7e96.up.railway.app/health
+```text
+app/                    Reused FastAPI backend; v3 CORS configuration
+tests/                  Backend regression and CORS tests
+frontend/src/           React TypeScript dashboard and interaction tests
+frontend/Dockerfile     Build with Node; serve static production files with Caddy
+Dockerfile              FastAPI production container
+scripts/verify_api.py   Real HTTP CRUD and optional enrollment verification
+docs/                   Approved design, plan, progress and verification record
 ```
 
-List existing watches:
+## Local development on Windows
 
-```bash
-curl https://course-watcher-production-7e96.up.railway.app/watches
-```
+Open PowerShell in this v3 folder. Python 3.12+ and Node.js 22.12+ are required.
 
-Create a watch:
-
-```bash
-curl -X POST \
-  https://course-watcher-production-7e96.up.railway.app/watches \
-  -H "Content-Type: application/json" \
-  -d '{
-    "subject": "CS",
-    "catalog": "136",
-    "component": "LEC",
-    "term_code": "1269"
-  }'
-```
-
-The returned object contains a numeric `id`. Use that value to check live enrollment:
-
-```bash
-curl https://course-watcher-production-7e96.up.railway.app/watches/1/status
-```
-
-Replace `1` with the actual Watch ID returned by the API.
-
-## Features
-
-- Create, list, retrieve, update, and delete course watches
-- Optionally monitor a specific component, such as `LEC`, `LAB`, or `TUT`
-- Use the current UW term automatically or accept an explicit term code
-- Filter watches by active or inactive status
-- Check live enrollment through the official UW Open Data API
-- Display each matching section as `OPEN` or `FULL`
-- Store a new enrollment snapshot after every successful status check
-- Preserve snapshot history instead of overwriting previous results
-- Reject duplicate watches at both the service and database levels
-- Preview one English natural-language course request through `POST /parse`
-- Provide interactive API documentation through FastAPI Swagger UI
-
-## Technology Stack
-
-- Python 3.12+
-- FastAPI, Uvicorn, SQLAlchemy 2, Pydantic 2, HTTPX
-- OpenAI Python SDK (for the protected parse preview)
-- SQLite by default
-- pytest
-
-## Requirements
-
-- Python 3.12 or newer
-- A UW Open Data API key for live status checks
-- An internet connection for live status checks
-
-Apply for a UW API key at <https://uwaterloo.ca/api/>. See the [UW Open Data API documentation](https://openapi.data.uwaterloo.ca/api-docs/index.html).
-
-## Installation
-
-Run these commands from the `Course-Watcher v2` directory:
+### Backend terminal
 
 ```powershell
 python -m venv .venv
-.\\.venv\\Scripts\\Activate.ps1
-python -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+Copy-Item .env.example .env
 ```
 
-If `python` is not available on Windows, use `py` instead for the virtual-environment command.
-
-## Environment Variables
-
-### UW API key
-
-Store the key in `UW_API_KEY`; do not put it in source code or upload it to GitHub.
-
-In PowerShell, set `UW_API_KEY` in the current terminal to your private API-key value (without printing it).
-
-### Database URL
-
-The optional `DATABASE_URL` selects the database connection. If unset, the service uses `sqlite:///./course_watcher.db`.
-
-## Parse Environment Variables
-
-- `APP_ACCESS_TOKEN`: private value required in the `X-Token` request header.
-- `OPENAI_API_KEY`: OpenAI API credential; never commit it.
-- `MODEL_NAME`: optional override; defaults to `gpt-5.6-luna`.
-
-The OpenAI API is billed separately from ChatGPT. Do not put any secret in source code, `.env` examples, screenshots, logs, or Git history.
-
-## Running the API
-
-Development server:
+Edit `.env` privately and set `UW_API_KEY` for live UW checks and automatic current-term lookup. Explicit-term watch CRUD works without a UW key. Then start the backend:
 
 ```powershell
-python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --env-file .env --host 127.0.0.1 --port 8000
 ```
 
-Production/Railway command (Railway supplies `$PORT`):
+### Frontend terminal
 
 ```powershell
-uvicorn app.main:app --host 0.0.0.0 --port $PORT
+Set-Location frontend
+npm.cmd ci
+npm.cmd run dev
 ```
 
-The health check is `GET /health` and returns `{"status":"ok"}`. FastAPI documentation is available at `/docs`; the OpenAPI document is at `/openapi.json`.
+Open http://127.0.0.1:5173. Development requests to `/api` are forwarded to http://127.0.0.1:8000 by Vite. Leave `VITE_API_BASE_URL` unset locally to use that proxy. Swagger is at http://127.0.0.1:8000/docs.
 
-## API Endpoints
+To test against the hosted backend instead, create `frontend/.env.local` containing its public `VITE_API_BASE_URL`, then restart Vite. Never put a UW or OpenAI key into any `VITE_` variable.
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/health` | Public service health check |
-| `POST` | `/parse` | Protected one-course natural-language preview |
-| `POST` | `/watches` | Create a course watch |
-| `GET` | `/watches` | List watches, optionally filtered by `active` |
-| `GET` | `/watches/{watch_id}` | Retrieve one watch |
-| `PATCH` | `/watches/{watch_id}` | Pause or resume a watch |
-| `DELETE` | `/watches/{watch_id}` | Delete a watch and its snapshots |
-| `GET` | `/watches/{watch_id}/status` | Check live section status and save snapshots |
+## Environment variables
 
-## Parse Examples
+| Variable | Service | Meaning |
+| --- | --- | --- |
+| `VITE_API_BASE_URL` | Frontend build | Public HTTPS FastAPI URL; rebuild after changes |
+| `CORS_ORIGINS` | Backend | Comma-separated allowed frontend origins, without URL paths |
+| `UW_API_KEY` | Backend only | Official Waterloo API key |
+| `DATABASE_URL` | Backend | Defaults to `sqlite:///./course_watcher.db` |
+| `PORT` | Both hosts | Container listening port, default 8080 |
+| `APP_ACCESS_TOKEN`, `OPENAI_API_KEY`, `MODEL_NAME` | Backend only | Optional retained v2 `/parse` configuration |
 
-`Watch CS 136 lectures in Fall 2026` returns `CS`, `136`, `LEC`, and `1269`.
+The current v3 backend is configured for a Railway volume mounted at `/data`, using `sqlite:////data/course_watcher.db`. This is separate from v2 data; v2 rows are not migrated. A volume preserves files across container restarts, but is not a backup. Without a volume, SQLite on a hosting container is ephemeral.
 
-`Watch CS 136` returns null component and term values.
+## Tests and production build
 
-`Watch CS 136 and ECE 106` is rejected because v2 parses exactly one explicit course.
-
-Send the accepted four fields from the preview to `POST /watches`. Include the private `APP_ACCESS_TOKEN` in the `X-Token` header when calling `/parse`.
-
-## Watch API
-
-Create a watch for all components of CS 136 in a specific term:
-
-```json
-{
-  "subject": "CS",
-  "catalog": "136",
-  "component": null,
-  "term_code": "1269"
-}
-```
-
-Create a lecture-only watch by setting `"component": "LEC"`. Both `component` and `term_code` are optional: null component means all components, and an omitted term requests the current term from UW. Subjects and components are normalized to uppercase; a term code must contain exactly four digits.
-
-List or filter watches with `GET /watches`, `GET /watches?active=true`, or `GET /watches?active=false`. Pause/resume with `PATCH /watches/{watch_id}` and `{"active": false}` or `true`.
-
-Check availability with `GET /watches/1/status`. A matching section is `OPEN` only when `enrolled_total < capacity`; otherwise it is `FULL`. Each successful check stores one `Snapshot` row per matching section.
-
-## Data Storage
-
-The `watches` table stores course and monitoring configuration. The `snapshots` table stores enrollment state for each successful check. One watch can have many snapshots; deleting a watch also deletes its snapshots.
-
-## Railway Deployment
-
-1. Create a Railway project and add a service from this repository.
-2. In the service **Settings**, set the builder to **Railpack**.
-3. In the service **Settings**, set the start command to:
-
-   ```text
-  python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT   
-  ```
-
-4. In the service Variables tab, configure:
-  ```text
-  PORT=8080
-  UW_API_KEY=<your UW Open Data API key>
-  APP_ACCESS_TOKEN=<your private random token>
-  OPENAI_API_KEY=<your OpenAI API key>
-  ```
-  MODEL_NAME is optional and defaults to gpt-5.6-luna.
-5. Set the healthcheck path to /health.
-6. Under Networking, generate a Railway service domain with target port 8080.
-7. Verify that https://<generated-domain>/health returns {"status":"ok"}.
-
-Never commit API keys or access tokens to GitHub. Store all deployment secrets in Railway's Variables tab.
-
-New Railway services cannot opt into legacy Config as Code, so this repository intentionally has no `railway.json`. Railway's current Infrastructure as Code flow requires a linked project and a successful `railway config plan`; use it only as a separately authorized deployment step. See Railway's [Config as Code](https://docs.railway.com/config-as-code) and [Infrastructure as Code](https://docs.railway.com/infrastructure-as-code) documentation.
-
-## Railway Deployment Limitation
-
-This deployment uses SQLite on Railway's ephemeral container filesystem without a Volume. Watch and Snapshot data may disappear after a restart or redeployment. The hosted service is a demonstration, not durable production storage.
-
-Persistent storage with a Railway Volume or PostgreSQL is outside the scope of this project.
-
-## Testing
-
-Run the complete suite from this directory:
+From the v3 root:
 
 ```powershell
-python -m pytest -q
+.\.venv\Scripts\python.exe -m pytest -q
 ```
 
-Tests use an isolated in-memory SQLite database. UW and OpenAI behavior is mocked, so the suite does not send real requests. Coverage includes request normalization, all watch endpoints, duplicate protection, API errors, component filtering, `OPEN`/`FULL` calculation, snapshots, cascade deletion, parse validation, token security, and parser retry/error handling.
+From `frontend`:
 
-## Error Handling
+```powershell
+npm.cmd test
+npm.cmd run build
+```
 
-Errors are structured JSON with a `detail` field. Invalid requests return `422`, missing resources `404`, duplicate watches `409`, model/UW failures `502`, and missing parse configuration `503`.
+Backend and frontend automated tests isolate external UW/OpenAI or HTTP responses. They do not by themselves prove live enrollment data. The real HTTP smoke check is separate:
 
-## Responsible API Use and Project Scope
+```powershell
+.\.venv\Scripts\python.exe scripts/verify_api.py --base-url http://127.0.0.1:8000
+```
 
-Use only the official UW API, keep credentials out of source control, avoid high-frequency requests, and use polling intervals of at least 15 minutes. Scheduled checks, notifications, multi-user subscriptions, production database migrations, and a frontend dashboard are intentionally outside the scope of this project.
+It creates a uniquely named temporary watch, checks list/get/pause/resume/delete and cleans up only its own watch. For a real course check, use `--enrollment --subject CS --catalog 136 --component LEC --term 1269`; choose an actually offered course and term. If the same watch already exists, the script stops without modifying it.
 
-The service only reports availability; it does not register users for courses.
+## Deploy separately on Railway
+
+Both Dockerfiles can be deployed with the [Railway CLI](https://docs.railway.com/cli). The [official FastAPI deployment guide](https://docs.railway.com/guides/fastapi) describes Docker and CLI deployment.
+
+1. Create or select a project, then create **two new empty services** for v3. Do not deploy into the original v2 service.
+2. Link this v3 root to the API service. Attach a volume at `/data`; set `DATABASE_URL=sqlite:////data/course_watcher.db` and the backend-only UW key. A Railway variable reference can reuse an existing same-project key without copying its value.
+3. Deploy the v3 root to the API service with its root Dockerfile. Generate a public domain targeting port 8080. Verify `/health`.
+4. Link `frontend/` to the web service. Set `VITE_API_BASE_URL` to the API public URL **before building**, then deploy this frontend directory. Generate another domain targeting port 8080.
+5. Set API `CORS_ORIGINS` to the exact web origin, optionally retaining localhost origins for development. Redeploy the API after changing it.
+6. Verify public reads and the full watch lifecycle from the published webpage, and test a real course's section status separately.
+
+The web container intentionally fails its build if the production API base URL is missing. It serves the built static app; Vite's development proxy is not used in production. Source-upload and Docker ignore files exclude environments, credentials, local databases, caches and installed dependencies.
